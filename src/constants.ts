@@ -1,10 +1,8 @@
 import {Clock} from './clock';
 import {DataChunks} from './dataChunks';
-import * as path from 'path';
 
 export const TICKS = 16; // ticks per measure
 export const WORKER_URL = '../lib/worker.js';
-export const MEASURE_COUNT = 4;
 
 // Some union types
 export type SourceNode = AudioBufferSourceNode | MediaStreamAudioSourceNode;
@@ -18,13 +16,14 @@ export type InputBuffer = AudioBuffer | MediaStream;
 export interface ILoop {
 	name: string
 	context: AudioContext
-	input: InputBuffer
+	// input: InputBuffer
+	input: SourceNode
 	volume: GainNode
 	processor: ScriptProcessorNode
 	clock: Clock
-	playback: AudioBuffer
+	playback: AudioBufferSourceNode
 	data: DataChunks
-	timing: number // Number of ticks in the (16 * measureCount) total
+	duration: number // Number of ticks this loop is
 	isPlaying: boolean
-	isRecoding: boolean
+	isRecording: boolean
 }

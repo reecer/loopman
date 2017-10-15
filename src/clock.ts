@@ -1,9 +1,4 @@
-import {WORKER_URL} from './constants';
-
-interface ClockListener {
-	tickCount: number
-	callback: Function
-}
+import {WORKER_URL, TICKS} from './constants';
 
 export class Clock {
 	currentTick: number;
@@ -11,16 +6,15 @@ export class Clock {
 	private listeners: {[t: number]: Function[]};
 	private worker: Worker;
 	private bpm: number;
-	private measures: number;
 
-	constructor(bpm: number, measures: number) {
+	constructor(bpm: number) {
 		this.worker = new Worker(WORKER_URL);
-		this.currentTick = 0;
+		this.currentTick = 1;
 		this.listeners = [];
+
 
 		this.worker.addEventListener('message', ev => this.tick(ev.data));
 		this.bpm = bpm;
-		this.measures = measures;
 	}
 
 	private tick(tickCount: number) {
@@ -32,47 +26,62 @@ export class Clock {
 		}
 	}
 
-	public update(bpm?: number, measures?: number) {
+	update(bpm?: number) {
 		if (bpm) {
 			this.bpm = bpm;
 		}
 
-		if (measures) {
-			this.measures = measures;
-		}
-
-		this.worker.postMessage({
-			bpm: this.bpm, 
-			measures: this.measures
-		});
+		this.worker.postMessage(this.bpm);
 	}
 
-	public start() {
+	start() {
 		this.update();
 	}
 
-	public stop() {
+	stop() {
 		this.worker.removeEventListener('message');
+	}
+
+	listenOnce(tickCount: number, callback: Function) {
+		let idx = -1;
+		idx = this.addListener(tickCount, (t: number) => {
+			this.rmListener(tickCount, idx);
+			callback(t);
+		});
 	}
 
 	/*
 		Add the callback for the given tick. 
 		Returns the index of the the listener;
 	*/
-	public addListener(tickCount: number, callback: Function): number {
+	addListener(tickCount: number, callback: Function): number {
 		if (!this.listeners[tickCount]) {
 			this.listeners[tickCount] = [];
 		}
 
-		console.log(this.listeners);
+		const idx = this.listeners[tickCount].push(callback) - 1;
+		if (this.currentTick === tickCount) {
+			callback(this.currentTick);
+		}
 
-		return this.listeners[tickCount].push(callback) - 1;
+		return idx;
+	}
+
+	addListeners(tickCount: number[], callback: Function): number[] {
+		return tickCount.map(tc => this.addListener(tc, callback));
 	}
 
 	/*
 		Remove the given index from `listeners`. As returned from `addListener`.
 	*/
-	public rmListener(tickCount: number, index: number) {
+	rmListener(tickCount: number, index: number) {
+		if (index < 0 || index >= this.listeners[tickCount].length) {
+			return;
+		}
 		this.listeners[tickCount].splice(index, 1);
+	}
+
+	rmListeners(tickCount: number, index: number[]) {
+		index.forEach(i => this.rmListener(tickCount, i));
 	}
 }

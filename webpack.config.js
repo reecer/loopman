@@ -1,8 +1,7 @@
-const path = require('path');
-
 module.exports = {
+	devtool: "source-map",
 	entry: {
-		lib: './src/index.ts',
+		lib: './src/loopManager.ts',
 		test: './test/test.ts'
 	},
 	output: {
